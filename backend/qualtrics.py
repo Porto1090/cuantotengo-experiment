@@ -63,8 +63,8 @@ def fetch_survey_data():
 
     # 5. Modify DATA before returning
     df = df.iloc[2:].reset_index(drop=True)
-    print("Original columns:", df.columns.tolist())
-    print("Sample data:\n", df.head())
+    # print("Original columns:", df.columns.tolist())
+    # print("Sample data:\n", df.head())
     columns_to_keep = [col for col in df.columns if col in ["StartDate", "EndDate", "Q1", "Duration (in seconds)", "Q3_1_1", "Q3_2_1", "Q3_3_1"]]
     df = df[columns_to_keep]
     
@@ -72,14 +72,14 @@ def fetch_survey_data():
     df = df.rename(columns={
         "Q1": "ID", 
         "Duration (in seconds)": "Duration (s)",
-        "Q3_1_1": "can_coca cola",
-        "Q3_2_1": "can_pepsi original", 
-        "Q3_3_1": "can_seltzer lime",
+        "Q3_1_1": "Dos Equis Lager", 
+        "Q3_2_1": "Manzanita Sol Original", 
+        "Q3_3_1": "Modelo Especial"
     })
     
     #change ID and Quantity columns to numeric
     df["ID"] = pd.to_numeric(df["ID"], errors='coerce')
-    quantity_columns = ["Q3_1_1", "Q3_2_1", "Q3_3_1"]
+    quantity_columns = ["Dos Equis Lager", "Manzanita Sol Original", "Modelo Especial"]
     for col in quantity_columns:
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int) 
 
@@ -93,10 +93,3 @@ def fetch_qualtrics_rows():
         raise RuntimeError("La columna ID no existe en Qualtrics")
     
     return df.to_dict(orient="records")
-  
-def fetch_fake_qualtrics_rows():
-  return [
-    {'StartDate': '2025-12-01 19:17:02', 'EndDate': '2025-12-01 19:18:59', 'Duration (s)': 116, 'ID': 2, 'Dos Equis Lager': 10, 'Manzanita Sol Original': 8, 'Modelo Especial': 12, 'Negra Modelo': 0, 'New Mix Jimador Paloma Lata': 0, 'Pepsi Black': 0, 'Pepsi Light': 0, 'Pepsi Regular': 0},
-    {'StartDate': '2026-02-10 19:17:02', 'EndDate': '2026-02-10 19:25:02', 'Duration (s)': 116, 'ID': 5, 'Dos Equis Lager': 10, 'Manzanita Sol Original': 8, 'Modelo Especial': 11, 'Negra Modelo': 0, 'New Mix Jimador Paloma Lata': 0, 'Pepsi Black': 0, 'Pepsi Light': 0, 'Pepsi Regular': 0},
-    {'StartDate': '2025-12-01 19:19:02', 'EndDate': '2025-12-01 19:12:59', 'Duration (s)': 116, 'ID': 4, 'Dos Equis Lager': 9, 'Manzanita Sol Original': 8, 'Modelo Especial': 12, 'Negra Modelo': 0, 'New Mix Jimador Paloma Lata': 0, 'Pepsi Black': 0, 'Pepsi Light': 0, 'Pepsi Regular': 0},
-  ]

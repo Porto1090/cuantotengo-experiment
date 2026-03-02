@@ -1,12 +1,18 @@
 from brand_controller import build_session_snapshot
-from azure_data import load_all_logs_grouped, load_fake_logs_by_session
-from qualtrics import fetch_qualtrics_rows, fetch_fake_qualtrics_rows
+from azure_data import load_all_logs_grouped
+from qualtrics import fetch_qualtrics_rows
 
 # Ground truth FIXED for this experiment
 EXPECTED_TOTALS = {
   "Dos Equis Lager": 10,
   "Manzanita Sol Original": 8,
   "Modelo Especial": 12,
+}
+
+BRAND_NAME_MAP = {
+  "can_seltzer lime": "Dos Equis Lager",
+  "can_canada dry ginger ale": "Manzanita Sol Original",
+  "can_diet coke original": "Modelo Especial",
 }
 
 def build_snapshot(timestamp, detected, expected):
@@ -77,11 +83,17 @@ def aggregate_experiment_data():
     # AZURE SNAPSHOTS
     snapshots = []
     for log in sorted(azure_logs, key=lambda x: x["timestamp"], reverse=True):
+      raw_metrics = log.get("brand_totals", {})
+      azure_metrics = {
+        BRAND_NAME_MAP[k]: v
+        for k, v in raw_metrics.items()
+        if k in BRAND_NAME_MAP
+      }
       snapshot = build_session_snapshot(
         timestamp=log["timestamp"].replace("T", " ").split("+")[0],
         expected=EXPECTED_TOTALS,
         qualtrics_metrics=qualtrics["metrics"],
-        azure_metrics=log.get("brand_totals", {})
+        azure_metrics=azure_metrics
       )
       snapshots.append(snapshot)
       
@@ -111,5 +123,5 @@ def aggregate_experiment_data():
       "snapshots": snapshots,
     })
     
-  #print(sessions[0], summary)
+  #(sessions[0], summary)
   return {"sessions": sessions, "summary": summary}

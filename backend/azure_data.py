@@ -28,16 +28,3 @@ def load_all_logs_grouped():
         logs_by_session.setdefault(session_id, []).append(log)
 
     return logs_by_session
-  
-def load_fake_logs_by_session(session_id):
-    data = [
-        {'session_id': 2, 'timestamp': '2025-12-01T19:16:46+00:00', 'brand_totals': {'Dos Equis Lager': 10, 'Manzanita Sol Original': 8, 'Modelo Especial': 12}, 'processing_time': '4.8210'}, 
-        {'session_id': 2, 'timestamp': '2025-12-01T19:16:45+00:00', 'brand_totals': {'Dos Equis Lager': 20, 'Manzanita Sol Original': 20, 'Modelo Especial': 20}, 'processing_time': '4.8210'},
-        {'session_id': 5, 'timestamp': '2025-12-01T19:17:45+00:00', 'brand_totals': {'Dos Equis Lager': 10, 'Manzanita Sol Original': 8, 'Modelo Especial': 12}, 'processing_time': '4.8210'},
-        {'session_id': 5, 'timestamp': '2025-12-01T19:21:45+00:00', 'brand_totals': {'Dos Equis Lager': 10, 'Manzanita Sol Original': 7, 'Modelo Especial': 12}, 'processing_time': '4.8210'},
-        {'session_id': 5, 'timestamp': '2025-12-01T19:21:45+00:00', 'brand_totals': {'Dos Equis Lager': 10, 'Manzanita Sol Original': 8, 'Modelo Especial': 12}, 'processing_time': '4.8210'},
-        {'session_id': 3, 'timestamp': '2025-12-01T19:21:45+00:00', 'brand_totals': {'Dos Equis Lager': 10, 'Manzanita Sol Original': 7, 'Modelo Especial': 12}, 'processing_time': '4.8210'},
-        {'session_id': 4, 'timestamp': '2025-12-01T19:21:45+00:00', 'brand_totals': {'Dos Equis Lager': 10, 'Manzanita Sol Original': 8, 'Modelo Especial': 12}, 'processing_time': '4.8210'},
-        {'session_id': 4, 'timestamp': '2025-12-01T19:21:45+00:00', 'processing_time': '4.8210'},
-    ]
-    return [entry for entry in data if entry["session_id"] == session_id]
