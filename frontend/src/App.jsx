@@ -1,135 +1,113 @@
 import { useEffect, useState } from "react";
-import ComparisonTable from "./ComparisonTable.jsx";
-import LoadingData from "./LoadingData.jsx";
-import GraphicDashboard from "./GraphicDashboard.jsx";
+import SummaryCards from "./components/SummaryCards";
+import SessionCard from "./components/SessionCard";
+import LoadingData from "./components/LoadingData";
+import GraphicDashboard from "./graphics/GraphicDashboard";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 function App() {
   const [sessions, setSessions] = useState([]);
   const [summary, setSummary] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [selectedRowIndex, setSelectedRowIndex] = useState({});
-  const [dashboardData, setDashboardData] = useState("dashboard");
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState("dashboard"); // 'dashboard' | 'graphics'
 
-  const callApi = async () => {
+  // Función para obtener los datos (con cache-busting)
+  const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/api/dashboard`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
+      // Agregamos un timestamp (?t=...) para evitar que el navegador guarde la respuesta en caché
+      const response = await fetch(`${API_BASE}/api/dashboard?t=${new Date().getTime()}`);
+      
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
       const data = await response.json();
-      const { sessions, summary } = data;
-      setSessions(sessions || []);
-      setSummary(summary || {});
+      setSessions(data.sessions || []);
+      setSummary(data.summary || {});
     } catch (error) {
       console.error("API Error:", error);
-      alert("Error loading dashboard data. Check backend.");
     } finally {
       setLoading(false);
     }
   };
 
+  // NUEVA: Función para el botón que fuerza la actualización en el backend
+  const handleForceRefresh = async () => {
+    try {
+      setLoading(true);
+      // 1. Le decimos al backend que extraiga datos frescos de Azure/Qualtrics
+      const refreshResponse = await fetch(`${API_BASE}/api/dashboard/refresh`, { 
+        method: "POST" 
+      });
+      
+      if (!refreshResponse.ok) throw new Error("Error forzando actualización");
+      
+      // 2. Una vez que el backend terminó, volvemos a descargar el JSON actualizado
+      await fetchDashboardData();
+    } catch (error) {
+      console.error("Refresh Error:", error);
+      setLoading(false); // Apagamos el loading en caso de error
+    }
+  };
+
   useEffect(() => {
-    callApi();
+    fetchDashboardData();
   }, []);
 
-  const toggleDashboardData = () => {
-    setDashboardData(prev => prev === "dashboard" ? "graphics" : "dashboard");
-  }
-
   return (
-    <div className="p-10">
-      <div className="mb-5 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Qualtrics Dashboard</h1>
-        <button onClick={callApi} className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center gap-4">
-          <span>Refresh Data</span>
-        </button>
-      </div>
-      <button onClick={toggleDashboardData} className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center gap-4 mb-4">
-        <span>Toggle Dashboard Data</span>
-      </button>
-      
-      {dashboardData === "dashboard" && (
-        loading ? (
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans p-6 md:p-10">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Header Actions */}
+        <header className="mb-8 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Qualtrics Audit Dashboard</h1>
+            <p className="text-gray-500 mt-1">Intercepting and validating Azure logs vs Ground Truth.</p>
+          </div>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setView(view === "dashboard" ? "graphics" : "dashboard")} 
+              className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg shadow-sm transition-all"
+            >
+              {view === "dashboard" ? "📈 View Graphics" : "📋 View Details"}
+            </button>
+            <button 
+              onClick={handleForceRefresh} 
+              disabled={loading}
+              className={`font-semibold py-2 px-4 rounded-lg shadow-sm transition-all flex items-center gap-2 
+                ${loading ? "bg-indigo-400 cursor-not-allowed text-white" : "bg-indigo-600 hover:bg-indigo-700 text-white"}`}
+            >
+              <svg className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              {loading ? "Refreshing..." : "Refresh Data"}
+            </button>
+          </div>
+        </header>
+        
+        {/* Main Content */}
+        {loading ? (
           <LoadingData />
-        ) : (
+        ) : view === "dashboard" ? (
           <>
-            <div className="mb-6 rounded-xl bg-gray-200 p-2 shadow-md">
-              <div className="rounded-base">
-                <div className="grid grid-cols-4 gap-8 p-4 mx-auto">
-                  <div className="flex flex-col bg-gray-400 rounded-lg p-6">
-                    <p className="mb-2 text-2xl font-semibold">{summary.total_records}</p>
-                    <p className="text-lg text-white font-extrabold">Total Records:</p>
-                  </div>
-                  <div className="flex flex-col bg-gray-400 rounded-lg p-6">
-                    <p className="mb-2 text-2xl font-semibold">{summary.session_successes}</p>
-                    <p className="text-lg text-white font-extrabold">Session Successes:</p>
-                  </div>
-                  <div className="flex flex-col bg-gray-400 rounded-lg p-6">
-                    <p className="mb-2 text-2xl font-semibold">{summary.user_failures}</p>
-                    <p className="text-lg text-white font-extrabold">Individual User Failures:</p>
-                  </div>
-                  <div className="flex flex-col bg-gray-400 rounded-lg p-6">
-                    <p className="mb-2 text-2xl font-semibold">{summary.algorithm_failures}</p>
-                    <p className="text-lg text-white font-extrabold">Individual Algorithm Failures:</p>
-                  </div>
+            <SummaryCards summary={summary} />
+            <div className="space-y-6">
+              {sessions.length === 0 ? (
+                <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+                  <p className="text-gray-500">No sessions available.</p>
                 </div>
-                <h1 className="text-sm text-gray-800 m-4 mt-0">Disclaimer: These data consider the last or only photo taken by the user ID</h1>
-              </div>
+              ) : (
+                sessions.map(session => (
+                  <SessionCard key={session.session_id} session={session} />
+                ))
+              )}
             </div>
-      
-            {sessions.map(session => {
-              const activeIndex = selectedRowIndex[session.session_id] ?? 0;
-              return (
-                <div
-                key={session.session_id}
-                className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
-                >
-                  <div className="mb-4 flex justify-between items-center border-b pb-4">
-                    <div>
-                      <h3 className="mb-4 text-xl font-semibold text-gray-800">Session ID: {session.session_id}</h3>
-                      <p>Qualtrics Timestamp: {session.metadata["start_date"]}</p>
-                    </div>
-                    <div className="p-2 border bg-red-100">
-                      <p className={`font-bold text-2xl ${session.snapshots[activeIndex]?.status === "success" ? "text-green-600" : "text-red-600"}`}>{session.snapshots[activeIndex]?.status === "success" ? "SUCCESS" : "ERROR"}</p>
-                    </div>
-                  </div>
-                  {session.snapshots?.map((snapshot, index) => {
-                    const isActive = selectedRowIndex[session.session_id] === index || (selectedRowIndex[session.session_id] === undefined && index === 0);
-                    return (
-                    <button key={index}
-                      className={`bg-gray-100 ml-4 p-2 rounded-b rounded-2xl border-gray-200
-                        ${isActive
-                          ? "bg-gray-400 text-white border-gray-800"
-                          : "bg-gray-100 hover:bg-gray-200 border-gray-200"
-                        }`}
-                      onClick={() =>
-                        setSelectedRowIndex(prev => ({
-                          ...prev,
-                          [session.session_id]: index
-                        }))
-                    }>
-                      {snapshot.timestamp}
-                    </button>
-                  )})}
-                  {session.snapshots.length === 0 ? <p className="ml-4 my-4 text-sm text-gray-500">No Azure logs found for this session.</p> : null}
-                  <ComparisonTable rows={session.snapshots[activeIndex]?.rows || []}/>
-                </div>
-              )
-            })}
           </>
-        )
-      )}
-      {dashboardData === "graphics" && (
-        loading ? (
-          <LoadingData />
         ) : (
-          <GraphicDashboard sessions={sessions} summary={summary}/>
-        )
-      )}
+          <GraphicDashboard sessions={sessions} summary={summary} />
+        )}
+
+      </div>
     </div>
   );
 }
