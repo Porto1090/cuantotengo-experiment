@@ -5,7 +5,7 @@
 def evaluate_brand(expected: int, qualtrics: int = 0, azure: int = 0) -> dict:
   if expected == qualtrics == azure:
     status = "success"
-  elif expected == azure and qualtrics != azure:
+  elif expected != qualtrics:
     status = "user_failure"
   elif expected != azure:
     status = "algorithm_failure"
@@ -61,7 +61,7 @@ def build_brand_rows(expected, qualtrics_metrics, azure_metrics):
 # SNAPSHOT BUILDER
 # =========================
 
-def build_session_snapshot(timestamp, expected, qualtrics_metrics, azure_metrics):
+def build_session_snapshot(timestamp, raw_timestamp, expected, qualtrics_metrics, azure_metrics):
   rows, totals = build_brand_rows(
     expected,
     qualtrics_metrics,
@@ -73,6 +73,7 @@ def build_session_snapshot(timestamp, expected, qualtrics_metrics, azure_metrics
 
   return {
     "timestamp": timestamp,
+    "raw_timestamp": raw_timestamp,
     "rows": rows,
     "totals": totals,
     "summary": {
@@ -80,5 +81,6 @@ def build_session_snapshot(timestamp, expected, qualtrics_metrics, azure_metrics
       "total_failures": total_failures,
       "success_rate": (totals["success"] / total_brands) if total_brands else 0
     },
-    "status": "success" if total_failures == 0 else "error"
+    "status": "success" if total_failures == 0 else "failure",
+    "user_status": "failure" if totals["userFailure"] > 0 else "success"
   }

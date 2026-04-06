@@ -81,10 +81,18 @@ def download_csv(file_id):
 
 def clean_dataframe(df):
   # Quitar las dos primeras filas (headers extra de Qualtrics)
-  df = df.iloc[2:].reset_index(drop=True)
+  df = df.iloc[23:].reset_index(drop=True)
+  print("--- 3 EJEMPLOS DE DATOS POR CADA COLUMNA ---")
+  for col in df.columns:
+      # Busca los valores únicos, ignora los vacíos (dropna) y toma los primeros 3
+      ejemplos = df[col].dropna().unique()[:3] 
+      print(f"{col}: {ejemplos}")
+  print("--------------------------------------------")
 
   columns_to_keep = [
-    "StartDate", "EndDate", "Q1", "Q1_Tag", "Q1_Phase",
+    "StartDate", "EndDate", 
+    "Q2_Time_Page Submit",
+    "Q1", "Q1_Tag", "Q1_Phase",
     "Q3_1_1", "Q3_2_1", "Q3_3_1", "Q3_4_1", "Q3_5_1", 
     "Q3_6_1", "Q3_7_1", "Q3_8_1", "Q3_9_1", "Q3_10_1", 
     "Q3_11_1", "Q3_12_1"
@@ -97,8 +105,18 @@ def clean_dataframe(df):
   df = df[[col for col in df.columns if col in columns_to_keep]]
 
   # Filtrar solo la fase "treatment"
-  df = df[df["Q1_Tag"].str.strip().str.lower() == "treatment"]
-  df = df[df["Q1_Phase"].str.strip().str.lower() == "phase ii"]
+  # df = df[df["Q1_Tag"].str.strip().str.lower() == "treatment"]
+  # df = df[df["Q1_Phase"].str.strip().str.lower() == "phase ii"]
+  
+  df = df[
+    (df["Q1_Tag"].str.strip().str.lower() == "control") |
+    (df["Q1_Tag"].str.strip().str.lower() == "treatment")
+  ]
+
+  df = df[
+    (df["Q1_Phase"].str.strip().str.lower() == "phase i") |
+    (df["Q1_Phase"].str.strip().str.lower() == "phase ii")
+  ]
   
 
   # Parseo de fechas a la zona horaria de CDMX
@@ -123,7 +141,8 @@ def clean_dataframe(df):
     "Q3_9_1": 'manzanita_sol_original', 
     "Q3_10_1": 'mirinda_original', 
     "Q3_11_1": 'pepsi_original', 
-    "Q3_12_1": 'squirt_original'
+    "Q3_12_1": 'squirt_original',
+    "Q2_Time_Page Submit": 'time_to_submit'
   })
 
   df["ID"] = pd.to_numeric(df["ID"], errors="coerce")
